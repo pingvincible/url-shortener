@@ -67,6 +67,21 @@ func (c *Client) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	return resp.IsAdmin, nil
 }
 
+func (c *Client) Register(ctx context.Context, email string, password string) (int64, error) {
+	const op = "grpc.Register"
+
+	resp, err := c.api.Register(ctx, &ssov1.RegisterRequest{
+		Email:    email,
+		Password: password,
+	})
+
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return resp.UserId, nil
+}
+
 // InterceptorLogger adapts slog logger to interceptor logger.
 // This code is simple enough to be copied and not imported.
 func InterceptorLogger(l *slog.Logger) grpclog.Logger {
