@@ -35,8 +35,7 @@ func New(
 	logOpts := []grpclog.Option{
 		grpclog.WithLogOnEvents(grpclog.PayloadSent, grpclog.PayloadReceived),
 	}
-
-	cc, err := grpc.DialContext(ctx, addr,
+	cc, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithChainUnaryInterceptor(
 			grpclog.UnaryClientInterceptor(InterceptorLogger(log), logOpts...),
