@@ -2,7 +2,9 @@ package save
 
 import (
 	"errors"
+	"fmt"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/jwtauth/v5"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
 	"log/slog"
@@ -40,9 +42,15 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 			slog.String("request_id", middleware.GetReqID(r.Context())),
 		)
 
+		token, claims, err := jwtauth.FromContext(r.Context())
+		if err != nil {
+			return
+		}
+		log.Info(fmt.Sprintf("token: %s, claims: %v", token, claims))
+
 		var req Request
 
-		err := render.DecodeJSON(r.Body, &req)
+		err = render.DecodeJSON(r.Body, &req)
 		if err != nil {
 			log.Error("failed to decode request body", sl.Err(err))
 
