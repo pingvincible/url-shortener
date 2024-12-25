@@ -42,6 +42,7 @@ func New(log *slog.Logger, userRegisterer UserRegisterer) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to decode request body")
 
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, resp.Error("failed to decode request"))
 
 			return
@@ -55,6 +56,7 @@ func New(log *slog.Logger, userRegisterer UserRegisterer) http.HandlerFunc {
 
 			log.Error("invalid request", sl.Err(err))
 
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, resp.ValidationError(validateErr))
 
 			return
@@ -64,6 +66,7 @@ func New(log *slog.Logger, userRegisterer UserRegisterer) http.HandlerFunc {
 		if err != nil {
 			log.Error("failed to register user", sl.Err(err))
 
+			render.Status(r, http.StatusBadRequest)
 			render.JSON(w, r, fmt.Errorf("internal server error"))
 
 			return
