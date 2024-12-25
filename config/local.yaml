@@ -12,3 +12,4 @@ clients:
     timeout: 5s
     retries_count: 3
 app_secret: "url-secret"
+app_id: 5

@@ -14,8 +14,9 @@ import (
 )
 
 type Client struct {
-	api ssov1.AuthClient
-	log *slog.Logger
+	api   ssov1.AuthClient
+	appID int32
+	log   *slog.Logger
 }
 
 func New(
@@ -23,7 +24,9 @@ func New(
 	log *slog.Logger,
 	addr string,
 	timeout time.Duration,
-	retriesCount uint) (*Client, error) {
+	retriesCount uint,
+	appID int32,
+) (*Client, error) {
 	const op = "grpc.New"
 
 	retryOpts := []grpcretry.CallOption{
@@ -48,7 +51,8 @@ func New(
 	}
 
 	return &Client{
-		api: ssov1.NewAuthClient(cc),
+		api:   ssov1.NewAuthClient(cc),
+		appID: appID,
 	}, nil
 }
 
@@ -79,6 +83,22 @@ func (c *Client) Register(ctx context.Context, email string, password string) (i
 	}
 
 	return resp.UserId, nil
+}
+
+func (c *Client) Login(ctx context.Context, email string, password string) (string, error) {
+	const op = "grpc.Login"
+
+	resp, err := c.api.Login(ctx, &ssov1.LoginRequest{
+		Email:    email,
+		Password: password,
+		AppId:    c.appID,
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return resp.Token, nil
 }
 
 // InterceptorLogger adapts slog logger to interceptor logger.

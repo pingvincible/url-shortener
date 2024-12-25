@@ -13,6 +13,7 @@ type Config struct {
 	HTTPServer  `yaml:"http_server"`
 	Clients     ClientsConfig `yaml:"clients"`
 	AppSecret   string        `yaml:"app_secret" env-required:"true" env:"APP_SECRET"`
+	AppId       int32         `yaml:"app_id" env-required:"true" env:"APP_ID"`
 }
 
 type HTTPServer struct {

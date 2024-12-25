@@ -10,6 +10,7 @@ import (
 	"os"
 	ssogrpc "url-shortener/internal/clients/sso/grpc"
 	"url-shortener/internal/config"
+	"url-shortener/internal/http-server/handlers/login"
 	"url-shortener/internal/http-server/handlers/redirect"
 	"url-shortener/internal/http-server/handlers/register"
 	"url-shortener/internal/http-server/handlers/url/save"
@@ -38,6 +39,7 @@ func main() {
 		cfg.Clients.SSO.Address,
 		cfg.Clients.SSO.Timeout,
 		cfg.Clients.SSO.RetriesCount,
+		cfg.AppId,
 	)
 	if err != nil {
 		log.Error("failed to init soo client", sl.Err(err))
@@ -61,6 +63,7 @@ func main() {
 	router.Use(middleware.URLFormat)
 
 	router.Post("/register", register.New(log, ssoClient))
+	router.Post("/login", login.New(log, ssoClient))
 	router.Route("/url", func(r chi.Router) {
 		r.Use(middleware.BasicAuth("url-shortener", map[string]string{
 			cfg.HTTPServer.User: cfg.HTTPServer.Password,
