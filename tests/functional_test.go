@@ -103,7 +103,7 @@ func TestURLShortener_SaveRedirect(t *testing.T) {
 
 			testRedirect(t, alias, tc.url)
 
-			// Remove
+			// Delete
 
 			//reqDel := e.DELETE("/"+path.Join("url", alias)).
 			//	WithBasicAuth("myuser", "mypass").

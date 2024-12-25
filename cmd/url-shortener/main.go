@@ -10,6 +10,7 @@ import (
 	"os"
 	ssogrpc "url-shortener/internal/clients/sso/grpc"
 	"url-shortener/internal/config"
+	deleteHanlder "url-shortener/internal/http-server/handlers/delete"
 	"url-shortener/internal/http-server/handlers/login"
 	"url-shortener/internal/http-server/handlers/redirect"
 	"url-shortener/internal/http-server/handlers/register"
@@ -70,11 +71,10 @@ func main() {
 		}))
 
 		r.Post("/", save.New(log, storage))
-		// TODO: add DELETE /url/{id}
 	})
 
 	router.Get("/{alias}", redirect.New(log, storage))
-
+	router.Delete("/{alias}", deleteHanlder.New(log, storage))
 	log.Info("starting server", slog.String("address", cfg.Address))
 
 	srv := &http.Server{
