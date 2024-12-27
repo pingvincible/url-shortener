@@ -66,24 +66,25 @@ func main() {
 		jwt.WithAcceptableSkew(30*time.Second),
 	)
 
-	router := chi.NewRouter()
+	r := chi.NewRouter()
 
 	// middleware
-	router.Use(middleware.RequestID)
-	router.Use(mwLogger.New(log))
-	router.Use(middleware.Recoverer)
-	router.Use(middleware.URLFormat)
+	r.Use(middleware.RequestID)
+	r.Use(mwLogger.New(log))
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.URLFormat)
 
 	// Protected routes
-	router.Group(func(r chi.Router) {
+	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(jwtAuth))
-		r.Use(authenticator.Authenticator(jwtAuth))
+		r.Use(authenticator.Authenticator(log, jwtAuth))
 
 		r.Post("/url", save.New(log, storage))
-		r.Delete("/{alias}", deleteHanlder.New(log, storage))
+		r.Delete("/{alias}", deleteHanlder.New(log, storage, ssoClient))
 	})
-	// TODO implement only admins can delete urls
-	router.Group(func(r chi.Router) {
+
+	// Public routes
+	r.Group(func(r chi.Router) {
 		r.Post("/register", register.New(log, ssoClient))
 		r.Post("/login", login.New(log, ssoClient))
 		r.Get("/{alias}", redirect.New(log, storage))
@@ -93,7 +94,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:         cfg.Address,
-		Handler:      router,
+		Handler:      r,
 		ReadTimeout:  cfg.HTTPServer.Timeout,
 		WriteTimeout: cfg.HTTPServer.Timeout,
 		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
