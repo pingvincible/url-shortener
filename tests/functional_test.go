@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"testing"
 	"url-shortener/internal/http-server/handlers/login"
-	"url-shortener/internal/http-server/handlers/register"
 	"url-shortener/internal/http-server/handlers/url/save"
 	"url-shortener/internal/lib/api"
 	resp "url-shortener/internal/lib/api/response"
@@ -25,14 +24,6 @@ func TestURLShortener_HappyPathToSave(t *testing.T) {
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
-
-	e.POST("/register").
-		WithJSON(register.Request{
-			Email:    "testadmin@gmail.com",
-			Password: "admin",
-		}).
-		Expect().
-		Status(http.StatusCreated)
 
 	r := e.POST("/login").
 		WithJSON(login.Request{
