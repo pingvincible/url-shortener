@@ -7,8 +7,11 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"url-shortener/internal/http-server/handlers/login"
+	"url-shortener/internal/http-server/handlers/register"
 	"url-shortener/internal/http-server/handlers/url/save"
 	"url-shortener/internal/lib/api"
+	resp "url-shortener/internal/lib/api/response"
 	"url-shortener/internal/lib/random"
 )
 
@@ -16,24 +19,52 @@ const (
 	host = "localhost:8082"
 )
 
-func TestURLShortener_HappyPath(t *testing.T) {
+func TestURLShortener_HappyPathToSave(t *testing.T) {
 	u := url.URL{
 		Scheme: "http",
 		Host:   host,
 	}
 	e := httpexpect.Default(t, u.String())
 
-	e.POST("/url").
+	e.POST("/register").
+		WithJSON(register.Request{
+			Email:    "testadmin@gmail.com",
+			Password: "admin",
+		}).
+		Expect().
+		Status(http.StatusCreated)
+
+	r := e.POST("/login").
+		WithJSON(login.Request{
+			Email:    "testadmin@gmail.com",
+			Password: "admin",
+		}).
+		Expect().
+		Status(http.StatusOK).
+		JSON().
+		Object()
+
+	r.Keys().ContainsOnly("status", "token")
+
+	r.Value("status").String().IsEqual(resp.StatusOK)
+
+	token := r.Value("token").String().Raw()
+
+	r = e.POST("/url").
 		WithJSON(save.Request{
 			URL:   gofakeit.URL(),
 			Alias: random.NewRandomString(10),
 		}).
-		WithBasicAuth("myuser", "mypass").
+		WithHeader("Authorization", "Bearer "+token).
 		Expect().
-		Status(200).
+		Status(http.StatusOK).
 		JSON().
-		Object().
-		ContainsKey("alias")
+		Object()
+
+	r.Keys().ContainsOnly("status", "alias")
+
+	r.Value("status").String().IsEqual(resp.StatusOK)
+
 }
 
 func TestURLShortener_SaveRedirect(t *testing.T) {
@@ -70,21 +101,35 @@ func TestURLShortener_SaveRedirect(t *testing.T) {
 
 			e := httpexpect.Default(t, u.String())
 
+			// Login
+
+			r := e.POST("/login").
+				WithJSON(login.Request{
+					Email:    "testadmin@gmail.com",
+					Password: "admin",
+				}).
+				Expect().
+				Status(http.StatusOK).
+				JSON().
+				Object()
+
+			token := r.Value("token").String().Raw()
+
 			// Save
 
-			resp := e.POST("/url").
+			r = e.POST("/url").
 				WithJSON(save.Request{
 					URL:   tc.url,
 					Alias: tc.alias,
 				}).
-				WithBasicAuth("myuser", "mypass").
+				WithHeader("Authorization", "Bearer "+token).
 				Expect().Status(http.StatusOK).
 				JSON().Object()
 
 			if tc.error != "" {
-				resp.NotContainsKey("alias")
+				r.NotContainsKey("alias")
 
-				resp.Value("error").String().IsEqual(tc.error)
+				r.Value("error").String().IsEqual(tc.error)
 
 				return
 			}
@@ -92,11 +137,11 @@ func TestURLShortener_SaveRedirect(t *testing.T) {
 			alias := tc.alias
 
 			if tc.alias != "" {
-				resp.Value("alias").String().IsEqual(alias)
+				r.Value("alias").String().IsEqual(alias)
 			} else {
-				resp.Value("alias").String().NotEmpty()
+				r.Value("alias").String().NotEmpty()
 
-				alias = resp.Value("alias").String().Raw()
+				alias = r.Value("alias").String().Raw()
 			}
 
 			// Redirect
@@ -104,17 +149,15 @@ func TestURLShortener_SaveRedirect(t *testing.T) {
 			testRedirect(t, alias, tc.url)
 
 			// Delete
+			path := "/" + alias
+			e.DELETE(path).
+				WithHeader("Authorization", "Bearer "+token).
+				Expect().
+				Status(http.StatusNoContent)
 
-			//reqDel := e.DELETE("/"+path.Join("url", alias)).
-			//	WithBasicAuth("myuser", "mypass").
-			//	Expect().Status(http.StatusOK).
-			//	JSON().Object()
-			//
-			//reqDel.Value("status").String().IsEqual("OK")
-			//
-			//// Redirect again
-			//
-			//testRedirectNotFound(t, alias)
+			// Redirect again
+
+			testRedirectNotFound(t, alias)
 
 		})
 	}
