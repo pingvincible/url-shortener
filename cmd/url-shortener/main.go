@@ -47,7 +47,7 @@ func main() {
 		cfg.AppId,
 	)
 	if err != nil {
-		log.Error("failed to init soo client", sl.Err(err))
+		log.Error("failed to init sso client", sl.Err(err))
 		os.Exit(1)
 	}
 
